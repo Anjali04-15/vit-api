@@ -1,0 +1,21 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment files
+.env
+venv/
+env/
+
+# PyTorch weights (optional)
+*.pt
+
+# Logs
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+# macOS system files
+.DS_Store
