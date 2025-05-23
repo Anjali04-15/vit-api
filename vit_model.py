@@ -16,9 +16,9 @@ class PatchEmbeddingLayer(nn.Module):
 
     def forward(self, x):
         B = x.shape[0]
-        x = self.proj(x).flatten(2).transpose(1, 2)
-        cls_tokens = self.class_token.expand(B, -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
+        x = self.proj(x).flatten(2).transpose(1, 2)  # (B, N, C)
+        cls_tokens = self.class_token.expand(B, -1, -1)  # (B, 1, C)
+        x = torch.cat((cls_tokens, x), dim=1)  # (B, N+1, C)
         x = x + self.position_embeddings
         return x
 
@@ -68,7 +68,7 @@ class TransformerBlock(nn.Module):
         x = x + self.mlp_block(x)
         return x
 
-# Vision Transformer
+# Vision Transformer (ViT)
 class VisionTransformer(nn.Module):
     def __init__(self, img_size=224, in_channels=3, patch_size=16, embedding_dims=768,
                  num_transformer_layers=12, mlp_dropout=0.1, attn_dropout=0.0, mlp_size=3072,
@@ -87,27 +87,21 @@ class VisionTransformer(nn.Module):
     def forward(self, x):
         x = self.patch_embedding_layer(x)
         x = self.transformer_encoder(x)
-        x = x[:, 0]
+        x = x[:, 0]  # CLS token
         return self.classifier(x)
 
+# Add the global classes explicitly for PyTorch to recognize them
 torch.serialization.add_safe_globals([VisionTransformer])
 
-# Image Preprocessing
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
-])
-
-# Load model weights
-def load_model(weights_path="vit_weights.pt"):
-    model = torch.load(weights_path, map_location="cpu", weights_only=False)
+# Function to load weights
+def load_vit_model(weights_path="vit_weights.pt"):
+    model = torch.load(weights_path, map_location='cpu', weights_only=False)
     model.eval()
     return model
 
 # Predict from PIL image
 def predict(model, image: Image.Image):
-    x = transform(image).unsqueeze(0)  # (1, 3, 224, 224)
+    x = transforms(image).unsqueeze(0)  # (1, 3, 224, 224)
     with torch.no_grad():
         outputs = model(x)
         predicted_class = torch.argmax(outputs, dim=1).item()
